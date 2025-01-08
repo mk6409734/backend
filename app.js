@@ -15,7 +15,7 @@ if (!fs.existsSync(uploadsDir)) {
 }
 
 // Middleware
-app.use(cors());
+app.use(cors({ origin: "*" }));
 app.use(bodyParser.json({ limit: "10mb" }));
 app.use("/uploads", express.static(uploadsDir));
 
