@@ -20,6 +20,9 @@ app.use(bodyParser.json({ limit: "10mb" }));
 app.use("/uploads", express.static(uploadsDir));
 
 // API Route to handle image and location
+app.get("/", (req, res) => {
+    res.send("Backend is running successfully!");
+});
 app.post("/api/capture", (req, res) => {
   const { image, location, deviceInfo, ipAddress } = req.body;
 
