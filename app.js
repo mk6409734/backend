@@ -18,6 +18,11 @@ if (!fs.existsSync(uploadsDir)) {
 app.use(cors({ origin: "*" }));
 app.use(bodyParser.json({ limit: "10mb" }));
 app.use("/uploads", express.static(uploadsDir));
+app.use((err, req, res, next) => {
+    console.error(err.stack);
+    res.status(500).send("Something went wrong!");
+});
+
 
 // API Route to handle image and location
 app.get("/", (req, res) => {
