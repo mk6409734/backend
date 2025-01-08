@@ -20,7 +20,7 @@ app.use(bodyParser.json({ limit: "10mb" }));
 app.use("/uploads", express.static(uploadsDir));
 
 // API Route to handle image and location
-app.post("/capture", (req, res) => {
+app.post("/api/capture", (req, res) => {
   const { image, location, deviceInfo, ipAddress } = req.body;
 
   // Save the image
