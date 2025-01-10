@@ -20,7 +20,7 @@ const bucketName = "capture-bucket1"; // Replace with your actual bucket name
 const uploadFile = async (filePath, destination) => {
   try {
     console.log("Uploading file:", filePath, "to bucket:", bucketName);
-    await storage.bucket(bucketName).upload(filePath, {
+    await Storage.bucket(bucketName).upload(filePath, {
       destination,
       public: true,
     });
