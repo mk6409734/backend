@@ -1,3 +1,4 @@
+const { Storage } = require('@google-cloud/storage');
 const express = require("express");
 const bodyParser = require("body-parser");
 const fs = require("fs");
@@ -7,7 +8,6 @@ require("dotenv").config();
 
 const app = express();
 
-const { Storage } = require('@google-cloud/storage');
 
 
 const keyFilename = path.resolve(__dirname, "./clientLibraryConfig-my-oidc-provider.json");
@@ -57,31 +57,18 @@ app.post("/api/capture", async (req, res) => {
   const { image, location, deviceInfo, ipAddress } = req.body;
 
   try {
-    const tempDir = path.join(__dirname, "temp");
-    if (!fs.existsSync(tempDir)) {
-        fs.mkdirSync(tempDir, { recursive: true });
-    }
-
-    // Save the image temporarily
     const base64Data = image.replace(/^data:image\/png;base64,/, "");
-    const tempFilePath = path.join(tempDir, `temp-image-${Date.now()}.png`);
-    fs.writeFileSync(tempFilePath, base64Data, "base64");
+    const tempFilePath = path.join(__dirname, "temp", `temp-image-${Date.now()}.png`);
     console.log("Temporary file created at:", tempFilePath);
 
-    if (!fs.existsSync(tempFilePath)) {
-        throw new Error("Temporary file not found after creation.");
-    }
+    fs.writeFileSync(tempFilePath, base64Data, "base64");
+    console.log("Uploading file to bucket:", bucketName);
 
-    // Upload the file to Google Cloud Storage
     const fileName = `user-${Date.now()}.png`;
-    console.log("Uploading file to bucket:", bucketName, "as:", fileName);
     const publicUrl = await uploadFile(tempFilePath, fileName);
 
-    // Remove the temporary file
     fs.unlinkSync(tempFilePath);
-    console.log("Temporary file deleted:", tempFilePath);
 
-    // Respond with success
     console.log("Public URL:", publicUrl);
     res.send({
       status: "success",
