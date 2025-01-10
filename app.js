@@ -32,7 +32,7 @@ const uploadFile = async (filePath, destination) => {
   }
 };
 
-const uploadsDir = path.join(__dirname, "uploads");
+const uploadsDir = path.join(__dirname, "downloads");
 console.log("Uploads directory:", uploadsDir);
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
