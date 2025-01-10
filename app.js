@@ -7,7 +7,31 @@ require("dotenv").config();
 
 const app = express();
 
+const { Storage } = require('@google-cloud/storage');
+
+// Initialize a Google Cloud Storage client
+const storage = new Storage({
+  keyFilename: "./clientLibraryConfig-my-oidc-provider.json", // Path to your JSON key file
+});
+
+// Define your bucket name
+const bucketName = "capture-bucket1"; // Replace with your actual bucket name
+
 // Ensure uploads directory exists
+const uploadFile = async (filePath, destination) => {
+  try {
+    await storage.bucket(bucketName).upload(filePath, {
+      destination, // The file name in the bucket
+      public: true, // Make the file publicly accessible (optional)
+    });
+    console.log(`${filePath} uploaded to ${bucketName}`);
+    return `https://storage.googleapis.com/${bucketName}/${destination}`;
+  } catch (error) {
+    console.error("Error uploading file:", error);
+    throw error;
+  }
+};
+
 const uploadsDir = path.join(__dirname, "uploads");
 console.log("Uploads directory:", uploadsDir);
 if (!fs.existsSync(uploadsDir)) {
@@ -28,22 +52,42 @@ app.use((err, req, res, next) => {
 app.get("/", (req, res) => {
     res.send("Backend is running successfully!");
 });
-app.post("/api/capture", (req, res) => {
+
+app.post("/api/capture", async (req, res) => {
   const { image, location, deviceInfo, ipAddress } = req.body;
 
-  // Save the image
-  const base64Data = image.replace(/^data:image\/png;base64,/, "");
-  const filename = path.join(uploadsDir, `user-${Date.now()}.png`);
-  fs.writeFileSync(filename, base64Data, "base64");
-  console.log("Image saved:", filename);
+  try {
+    // Save the image temporarily
+    const base64Data = image.replace(/^data:image\/png;base64,/, "");
+    const tempFilePath = path.join(__dirname, `temp-image-${Date.now()}.png`);
+    fs.writeFileSync(tempFilePath, base64Data, "base64");
 
-  // Log location, device info, and IP
-  console.log("Location:", location);
-  console.log("Device Info:", deviceInfo);
-  console.log("IP Address:", ipAddress);
+    // Upload the file to Google Cloud Storage
+    const fileName = `user-${Date.now()}.png`; // Name of the file in the bucket
+    const publicUrl = await uploadFile(tempFilePath, fileName);
 
-  res.send({ status: "success", message: "Data captured!" });
+    // Remove the temporary file
+    fs.unlinkSync(tempFilePath);
+
+    // Log details
+    console.log("Public URL:", publicUrl);
+    console.log("Location:", location);
+    console.log("Device Info:", deviceInfo);
+    console.log("IP Address:", ipAddress);
+
+    res.send({
+      status: "success",
+      message: "Data captured!",
+      imageUrl: publicUrl,
+    });
+  } catch (error) {
+    console.error("Error handling capture:", error);
+    res
+      .status(500)
+      .send({ status: "error", message: "Failed to capture data" });
+  }
 });
+
 
 
 // Start the server
