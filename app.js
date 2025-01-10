@@ -13,6 +13,7 @@ const app = express();
 const keyFilename = path.resolve(__dirname, "./clientLibraryConfig-my-oidc-provider.json");
 console.log("Using Key File:", keyFilename);
 
+const storage = new Storage();
 // Define your bucket name
 const bucketName = "capture-bucket1"; // Replace with your actual bucket name
 
@@ -20,7 +21,7 @@ const bucketName = "capture-bucket1"; // Replace with your actual bucket name
 const uploadFile = async (filePath, destination) => {
   try {
     console.log("Uploading file:", filePath, "to bucket:", bucketName);
-    await Storage.bucket(bucketName).upload(filePath, {
+    await storage.bucket(bucketName).upload(filePath, {
       destination,
       public: true,
     });
