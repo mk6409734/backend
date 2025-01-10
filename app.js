@@ -9,7 +9,6 @@ const app = express();
 
 const { Storage } = require('@google-cloud/storage');
 
-const path = require("path");
 
 const keyFilename = path.resolve(__dirname, "./clientLibraryConfig-my-oidc-provider.json");
 console.log("Using Key File:", keyFilename);
