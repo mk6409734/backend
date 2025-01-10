@@ -57,16 +57,25 @@ app.post("/api/capture", async (req, res) => {
   const { image, location, deviceInfo, ipAddress } = req.body;
 
   try {
+    const tempDir = path.join(__dirname, "temp");
+    if (!fs.existsSync(tempDir)) {
+      console.log("Temporary directory does not exist. Creating:", tempDir);
+      fs.mkdirSync(tempDir, { recursive: true });
+    }
+
     const base64Data = image.replace(/^data:image\/png;base64,/, "");
-    const tempFilePath = path.join(__dirname, "temp", `temp-image-${Date.now()}.png`);
+    const tempFilePath = path.join(tempDir, `temp-image-${Date.now()}.png`);
     console.log("Temporary file created at:", tempFilePath);
 
     fs.writeFileSync(tempFilePath, base64Data, "base64");
-    console.log("Uploading file to bucket:", bucketName);
+    console.log("File written successfully:", tempFilePath);
 
     const fileName = `user-${Date.now()}.png`;
+    console.log("Uploading file to bucket:", bucketName);
+
     const publicUrl = await uploadFile(tempFilePath, fileName);
 
+    // Clean up the temporary file
     fs.unlinkSync(tempFilePath);
 
     console.log("Public URL:", publicUrl);
