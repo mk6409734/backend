@@ -57,24 +57,32 @@ app.post("/api/capture", async (req, res) => {
   const { image, location, deviceInfo, ipAddress } = req.body;
 
   try {
+    const tempDir = path.join(__dirname, "temp");
+    if (!fs.existsSync(tempDir)) {
+        fs.mkdirSync(tempDir, { recursive: true });
+    }
+
     // Save the image temporarily
     const base64Data = image.replace(/^data:image\/png;base64,/, "");
-    const tempFilePath = path.join(__dirname, `temp-image-${Date.now()}.png`);
+    const tempFilePath = path.join(tempDir, `temp-image-${Date.now()}.png`);
     fs.writeFileSync(tempFilePath, base64Data, "base64");
+    console.log("Temporary file created at:", tempFilePath);
+
+    if (!fs.existsSync(tempFilePath)) {
+        throw new Error("Temporary file not found after creation.");
+    }
 
     // Upload the file to Google Cloud Storage
-    const fileName = `user-${Date.now()}.png`; // Name of the file in the bucket
+    const fileName = `user-${Date.now()}.png`;
+    console.log("Uploading file to bucket:", bucketName, "as:", fileName);
     const publicUrl = await uploadFile(tempFilePath, fileName);
 
     // Remove the temporary file
     fs.unlinkSync(tempFilePath);
+    console.log("Temporary file deleted:", tempFilePath);
 
-    // Log details
+    // Respond with success
     console.log("Public URL:", publicUrl);
-    console.log("Location:", location);
-    console.log("Device Info:", deviceInfo);
-    console.log("IP Address:", ipAddress);
-
     res.send({
       status: "success",
       message: "Data captured!",
@@ -82,12 +90,9 @@ app.post("/api/capture", async (req, res) => {
     });
   } catch (error) {
     console.error("Error handling capture:", error);
-    res
-      .status(500)
-      .send({ status: "error", message: "Failed to capture data" });
+    res.status(500).send({ status: "error", message: "Failed to capture data" });
   }
 });
-
 
 
 // Start the server
