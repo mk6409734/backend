@@ -9,10 +9,10 @@ const app = express();
 
 const { Storage } = require('@google-cloud/storage');
 
-// Initialize a Google Cloud Storage client
-const storage = new Storage({
-  keyFilename: "./clientLibraryConfig-my-oidc-provider.json", // Path to your JSON key file
-});
+const path = require("path");
+
+const keyFilename = path.resolve(__dirname, "clientLibraryConfig-my-oidc-provider.json");
+console.log("Using Key File:", keyFilename);
 
 // Define your bucket name
 const bucketName = "capture-bucket1"; // Replace with your actual bucket name
@@ -20,9 +20,10 @@ const bucketName = "capture-bucket1"; // Replace with your actual bucket name
 // Ensure uploads directory exists
 const uploadFile = async (filePath, destination) => {
   try {
+    console.log("Uploading file:", filePath, "to bucket:", bucketName);
     await storage.bucket(bucketName).upload(filePath, {
-      destination, // The file name in the bucket
-      public: true, // Make the file publicly accessible (optional)
+      destination,
+      public: true,
     });
     console.log(`${filePath} uploaded to ${bucketName}`);
     return `https://storage.googleapis.com/${bucketName}/${destination}`;
@@ -98,3 +99,6 @@ app.post("/api/capture", async (req, res) => {
 // Start the server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
+
+module.exports = uploadFile;
