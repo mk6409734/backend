@@ -6,7 +6,7 @@
   "token_url": "https://sts.googleapis.com/v1/token",
   "service_account_impersonation_url": "https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/storage-access@capture-447212.iam.gserviceaccount.com:generateAccessToken",
   "credential_source": {
-    "file": "downloads",
+    "file": "/opt/render/project/src/credentials/token.json",
     "format": {
       "type": "json",
       "subject_token_field_name": "access_token"
