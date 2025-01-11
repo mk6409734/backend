@@ -17,6 +17,8 @@ const storage = new Storage();
 // Define your bucket name
 const bucketName = "capture-bucket1"; // Replace with your actual bucket name
 
+const filePath = '/opt/render/project/src/temp/temp-image-1736484568902.png';
+
 // Ensure uploads directory exists
 const uploadFile = async (filePath, destination) => {
   try {
