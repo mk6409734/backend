@@ -8,18 +8,17 @@ require("dotenv").config();
 
 const app = express();
 
-
-
 const keyFilename = path.resolve(__dirname, "./clientLibraryConfig-my-oidc-provider.json");
 console.log("Using Key File:", keyFilename);
 
-const storage = new Storage();
-// Define your bucket name
-const bucketName = "capture-bucket1"; // Replace with your actual bucket name
+const storage = new Storage({ keyFilename });
+const bucketName = "capture-bucket1";
 
-const filePath = '/opt/render/project/src/temp/temp-image-1736484568902.png';
+const uploadsDir = path.join(__dirname, "temp");
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
 
-// Ensure uploads directory exists
 const uploadFile = async (filePath, destination) => {
   try {
     console.log("Uploading file:", filePath, "to bucket:", bucketName);
@@ -35,51 +34,32 @@ const uploadFile = async (filePath, destination) => {
   }
 };
 
-const uploadsDir = path.join(__dirname, "temp");
-console.log("Uploads directory:", uploadsDir);
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
-}
-
-// Middleware
 app.use(cors({ origin: "*" }));
 app.use(bodyParser.json({ limit: "10mb" }));
-app.use("/uploads", express.static(uploadsDir));
-app.use((err, req, res, next) => {
-    console.error(err.stack);
-    res.status(500).send("Something went wrong!");
-});
 
-
-// API Route to handle image and location
 app.get("/", (req, res) => {
-    res.send("Backend is running successfully!");
+  res.send("Backend is running successfully!");
 });
 
 app.post("/api/capture", async (req, res) => {
-  const { image, location, deviceInfo, ipAddress } = req.body;
+  const { image } = req.body;
+  const tempDir = path.join(__dirname, "temp");
+  const tempFilePath = path.join(tempDir, `temp-image-${Date.now()}.png`);
 
   try {
-    const tempDir = path.join(__dirname, "temp");
     if (!fs.existsSync(tempDir)) {
       console.log("Temporary directory does not exist. Creating:", tempDir);
       fs.mkdirSync(tempDir, { recursive: true });
     }
 
     const base64Data = image.replace(/^data:image\/png;base64,/, "");
-    const tempFilePath = path.join(tempDir, `temp-image-${Date.now()}.png`);
     console.log("Temporary file created at:", tempFilePath);
 
     fs.writeFileSync(tempFilePath, base64Data, "base64");
     console.log("File written successfully:", tempFilePath);
 
     const fileName = `user-${Date.now()}.png`;
-    console.log("Uploading file to bucket:", bucketName);
-
     const publicUrl = await uploadFile(tempFilePath, fileName);
-
-    // Clean up the temporary file
-    fs.unlinkSync(tempFilePath);
 
     console.log("Public URL:", publicUrl);
     res.send({
@@ -90,13 +70,13 @@ app.post("/api/capture", async (req, res) => {
   } catch (error) {
     console.error("Error handling capture:", error);
     res.status(500).send({ status: "error", message: "Failed to capture data" });
+  } finally {
+    if (fs.existsSync(tempFilePath)) {
+      fs.unlinkSync(tempFilePath);
+      console.log("Temporary file deleted:", tempFilePath);
+    }
   }
 });
 
-
-// Start the server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
-
-
-module.exports = uploadFile;
