@@ -47,21 +47,30 @@ app.post("/api/capture", async (req, res) => {
   const tempFilePath = path.join(tempDir, `temp-image-${Date.now()}.png`);
 
   try {
+    // Ensure the temporary directory exists
     if (!fs.existsSync(tempDir)) {
       console.log("Temporary directory does not exist. Creating:", tempDir);
       fs.mkdirSync(tempDir, { recursive: true });
     }
 
+    // Save the base64 image to the temporary file
     const base64Data = image.replace(/^data:image\/png;base64,/, "");
+    console.log("Writing file to:", tempFilePath);
+    fs.writeFileSync(tempFilePath, base64Data, "base64");
+
+    // Ensure the file was created successfully
+    if (!fs.existsSync(tempFilePath)) {
+      throw new Error(`Temporary file not created at ${tempFilePath}`);
+    }
     console.log("Temporary file created at:", tempFilePath);
 
-    fs.writeFileSync(tempFilePath, base64Data, "base64");
-    console.log("File written successfully:", tempFilePath);
-
+    // Upload the file to Google Cloud Storage
     const fileName = `user-${Date.now()}.png`;
     const publicUrl = await uploadFile(tempFilePath, fileName);
 
-    console.log("Public URL:", publicUrl);
+    console.log("File uploaded successfully. Public URL:", publicUrl);
+
+    // Respond with the public URL
     res.send({
       status: "success",
       message: "Data captured!",
@@ -69,14 +78,16 @@ app.post("/api/capture", async (req, res) => {
     });
   } catch (error) {
     console.error("Error handling capture:", error);
-    res.status(500).send({ status: "error", message: "Failed to capture data" });
+    res.status(500).send({ status: "error", message: error.message });
   } finally {
+    // Clean up the temporary file
     if (fs.existsSync(tempFilePath)) {
       fs.unlinkSync(tempFilePath);
       console.log("Temporary file deleted:", tempFilePath);
     }
   }
 });
+
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
