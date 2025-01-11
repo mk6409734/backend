@@ -8,7 +8,7 @@ require("dotenv").config();
 
 const app = express();
 
-const keyFilename = path.resolve(__dirname, "./clientLibraryConfig-my-oidc-provider.json");
+const keyFilename = process.env.GOOGLE_APPLICATION_CREDENTIALS 
 console.log("Using Key File:", keyFilename);
 
 const storage = new Storage({ keyFilename });
