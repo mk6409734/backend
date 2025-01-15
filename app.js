@@ -42,35 +42,41 @@ app.get("/", (req, res) => {
 });
 
 app.post("/api/capture", async (req, res) => {
-  const { image } = req.body;
-  const tempDir = path.join(__dirname, "temp");
-  const tempFilePath = path.join(tempDir, `temp-image-${Date.now()}.png`);
+  const { image, location, deviceInfo, ipAddress } = req.body;
 
   try {
-    // Ensure the temporary directory exists
+    const tempDir = path.join(__dirname, "temp");
+
+    // Ensure the temp directory exists
     if (!fs.existsSync(tempDir)) {
       console.log("Temporary directory does not exist. Creating:", tempDir);
       fs.mkdirSync(tempDir, { recursive: true });
+    } else if (!fs.lstatSync(tempDir).isDirectory()) {
+      console.log("'temp' exists but is not a directory. Deleting and recreating.");
+      fs.unlinkSync(tempDir);
+      fs.mkdirSync(tempDir, { recursive: true });
     }
 
-    // Save the base64 image to the temporary file
+    console.log("Temporary directory is ready:", tempDir);
+
+    // Create a temporary file
     const base64Data = image.replace(/^data:image\/png;base64,/, "");
+    const tempFilePath = path.join(tempDir, `temp-image-${Date.now()}.png`);
     console.log("Writing file to:", tempFilePath);
+
     fs.writeFileSync(tempFilePath, base64Data, "base64");
+    console.log("File written successfully:", tempFilePath);
 
-    // Ensure the file was created successfully
-    if (!fs.existsSync(tempFilePath)) {
-      throw new Error(`Temporary file not created at ${tempFilePath}`);
-    }
-    console.log("Temporary file created at:", tempFilePath);
-
-    // Upload the file to Google Cloud Storage
+    // Upload the file to the bucket
     const fileName = `user-${Date.now()}.png`;
+    console.log("Uploading file to bucket:", bucketName);
+
     const publicUrl = await uploadFile(tempFilePath, fileName);
 
-    console.log("File uploaded successfully. Public URL:", publicUrl);
+    // Clean up the temporary file
+    fs.unlinkSync(tempFilePath);
 
-    // Respond with the public URL
+    console.log("Public URL:", publicUrl);
     res.send({
       status: "success",
       message: "Data captured!",
@@ -78,15 +84,10 @@ app.post("/api/capture", async (req, res) => {
     });
   } catch (error) {
     console.error("Error handling capture:", error);
-    res.status(500).send({ status: "error", message: error.message });
-  } finally {
-    // Clean up the temporary file
-    if (fs.existsSync(tempFilePath)) {
-      fs.unlinkSync(tempFilePath);
-      console.log("Temporary file deleted:", tempFilePath);
-    }
+    res.status(500).send({ status: "error", message: "Failed to capture data" });
   }
 });
+
 
 
 const PORT = process.env.PORT || 5000;
